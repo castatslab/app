@@ -17,5 +17,41 @@
 .player-grid.tactics-penetration .tzone-4 .player-id strong,
 .player-grid.tactics-penetration .tzone-2 .player-id strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .block-grid.tactics-penetration{grid-template-columns:repeat(4,minmax(0,1fr));}
-.block-grid.tactics-penetration .block-slot.block-ineligible{opacity:.38;}
+/* La Z1 que penetra és de segona línia: no es crea cap control de bloqueig.
+   La tercera columna queda lliure per mantenir la correspondència amb la pista. */
+.block-grid.tactics-penetration .block-zone-4{grid-column:1;}
+.block-grid.tactics-penetration .block-zone-3{grid-column:2;}
+.block-grid.tactics-penetration .block-zone-1{grid-column:3;}
+.block-grid.tactics-penetration .block-zone-2{grid-column:4;}
+/* La placa identificadora no divideix els botons: va dins del marge superior
+   del quadrant sense consumir superfície de pulsació. */
+.player-grid.tactics-penetration .player-slot .player-id{
+ top:0;left:50%;transform:translate(-50%,0);
+ max-width:calc(100% - 7px);min-width:0;
+ padding:1px 5px;line-height:1.05;
+ border-radius:0 0 6px 6px;
+ overflow:hidden;text-overflow:ellipsis;
+}
+.player-grid.tactics-penetration .player-slot .player-id strong{
+ font-size:clamp(9px,1.05vw,16px);
+ white-space:nowrap;
+}
+.player-grid.tactics-penetration .player-slot .player-id small{font-size:.78em;}
+@media (orientation:landscape) and (max-height:450px){
+ .player-grid.tactics-penetration .player-slot .player-id{padding:1px 3px;}
+ .player-grid.tactics-penetration .player-slot .player-id strong{font-size:clamp(8px,1.15vw,12px);}
+}
+/* Capçalera dels marcadors en horitzontal mòbil: el nom no pot quedar
+   ocult darrere els botons +/-; es limita l'escut en alçada. */
+@media (orientation:landscape) and (max-height:450px){
+ .header .score-zone{display:flex;flex-direction:column;gap:0;justify-content:center;overflow:hidden;}
+ .header .score-zone .team-identity{flex:0 0 auto;min-height:0;max-height:48%;gap:0;overflow:visible;}
+ .header .score-zone .team-crest{height:clamp(9px,2.5vh,13px);min-height:0;flex:0 0 auto;}
+ .header .score-zone .rival-crest-slot{display:none;}
+ .header .score-zone .team-identity .header-title{display:block;font-size:clamp(8px,1.1vw,11px);line-height:1.15;max-width:96%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+ .header .score-zone .score-row{flex:0 0 auto;min-height:0;gap:clamp(7px,1vw,12px);}
+ .header .score-zone .score-row strong{font-size:clamp(18px,2.1vw,27px);line-height:1;}
+ .header .score-zone .score-adjust{width:clamp(25px,3.3vh,32px);height:clamp(25px,3.3vh,32px);}
+}
+
 /* No es retallen superfícies per animació: els 24 controls continuen sent directes. */
