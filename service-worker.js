@@ -1,11 +1,12 @@
-const CACHE_NAME = 'castatslab-1.1.0-lab-tactics-alpha6';
+const CACHE_NAME = 'castatslab-1.1.0-lab-tactics-alpha7';
 const APP_SHELL = [
   './Informe/style.css?v=1.1.0',
   './shared/player-scroll.css?v=1.1.0',
   './shared/player-scroll.js?v=1.1.0',
-  './Capa7/css/tactics.css?v=1.1.0-lab6',
+  './Capa7/css/tactics.css?v=1.1.0-lab7',
   './Capa7/js/tactics-layout.js',
   './Capa7/index.html',
+  './Capa7/js/capa7-pro2-controller.js?v=1.1.0-lab7',
   './Informe/index.html',
   './Acumulat/index.html',
   './',

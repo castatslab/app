@@ -81,9 +81,29 @@ function renderPlayers(ui){
  });
 }
 function renderBlocks(ui){
- const g=$('#blockGrid');g.innerHTML='';const shown=visualCourt();
- g.classList.toggle('tactics-penetration',tacticsMode==='penetration-z1');
- (tacticsMode==='penetration-z1'?['4','3','1','2']:['4','3','2']).filter(zone=>tacticsMode!=='penetration-z1'||!!T.blockRegZoneForVisual(engine.state.game.court,shown,zone)).forEach(zone=>{const slot=document.createElement('div');slot.className='block-slot';if(tacticsMode==='penetration-z1')slot.classList.add('block-zone-'+zone);const regZone=T.blockRegZoneForVisual(engine.state.game.court,shown,zone);const enabled=!!regZone&&ui.blocksEnabled;if(!regZone)slot.classList.add('block-ineligible');[['crimson',0,'0 · BLOQUEIG FORA'],['petrol',1,'1 · BLOQUEIG'],['emerald',2,'2 · BLOQUEIG + PUNT']].forEach(([c,v,t])=>{const b=document.createElement('button');b.className=c;b.textContent=t;b.disabled=!enabled;if(!regZone)b.title='La jugadora situada aquí és de segona línia: no pot bloquejar';b.onclick=()=>run(()=>engine.block(regZone,v));slot.appendChild(b);});g.appendChild(slot);});
+ const g=$('#blockGrid');g.innerHTML='';
+ const shown=visualCourt();
+ const penetration=tacticsMode==='penetration-z1';
+ g.classList.toggle('tactics-penetration',penetration);
+ // In 4+2 locks can move a front-row player to any visual zone.
+ // Blocking belongs to the regulatory front row, never to a visual position.
+ const entries=penetration
+   ? ['4','3','2'].map(regZone=>({regZone,visualZone:Object.keys(shown).find(z=>shown[z]===engine.state.game.court[regZone])||null}))
+   : ['4','3','2'].map(visualZone=>({visualZone,regZone:T.blockRegZoneForVisual(engine.state.game.court,shown,visualZone)}));
+ entries.forEach(({regZone,visualZone})=>{
+   const slot=document.createElement('div');slot.className='block-slot';
+   if(penetration)slot.classList.add('block-zone-'+regZone);
+   const enabled=!!regZone&&ui.blocksEnabled;
+   if(!regZone)slot.classList.add('block-ineligible');
+   const playerName=regZone?player(engine.state.game.court[regZone]).name:'';
+   const description=regZone?`Bloqueig: ${playerName}, Z${regZone} reglamentària${visualZone?' (posició visual Z'+visualZone+')':''}`:'Jugadora de segona línia: no pot bloquejar';
+   [['crimson',0,'0 · BLOQUEIG FORA'],['petrol',1,'1 · BLOQUEIG'],['emerald',2,'2 · BLOQUEIG + PUNT']].forEach(([c,v,t])=>{
+     const button=document.createElement('button');button.className=c;button.textContent=t;
+     button.disabled=!enabled;button.title=description;button.setAttribute('aria-label',description+' — '+t);
+     button.onclick=()=>run(()=>engine.block(regZone,v));slot.appendChild(button);
+   });
+   g.appendChild(slot);
+ });
 }
 function render(){
  const s=engine.state, venue=s.metadata.venue, ui=P.buildCapa7UiState(engine,{localMode});
