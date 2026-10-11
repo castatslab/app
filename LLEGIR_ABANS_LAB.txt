@@ -1,0 +1,10 @@
+STATS CASTELLAR LAB · Base 1.1.0
+
+Aquest projecte és una còpia experimental per a castatslab/app.
+No és l’aplicació oficial i no s’ha d’utilitzar per registrar partits reals.
+S’ha mantingut intacte el motor de joc, les estadístiques i l’estructura de dades.
+Canvis: nom PWA, identificació visible a Inici, número LAB a Configuració i memòria cau pròpia.
+El GitHub Pages del laboratori s’ha de publicar des de l’arrel (/) de main.
+URL prevista: https://castatslab.github.io/app/
+AVÍS: GitHub Pages en repositori públic exposa el codi i els recursos a tothom.
+Les dades locals de cada domini es mantenen separades al navegador. No s’ha activat cap sincronització entre instal·lacions.
