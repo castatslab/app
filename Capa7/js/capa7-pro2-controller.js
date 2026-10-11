@@ -2,11 +2,13 @@
 'use strict';
 const P=window.StatsPro2;
 const T=window.StatsPro2Tactical;
+const L=window.StatsLabTacticsLayout;
 if(!P) throw new Error('StatsPro2 no carregat');
 if(!T) throw new Error('StatsPro2Tactical no carregat');
+if(!L) throw new Error('StatsLabTacticsLayout no carregat');
 const VISUAL_ZONES=['4','3','2','5','6','1'];
 const $=q=>document.querySelector(q), $$=q=>[...document.querySelectorAll(q)];
-let engine=null, storage=null, adapter=null, localMode=null, positionsDraft=null, dragIndex=null, changeOutZone=null, tacticalLocks={};
+let engine=null, storage=null, adapter=null, localMode=null, positionsDraft=null, dragIndex=null, changeOutZone=null, tacticalLocks={}, tacticsMode='3-3';
 
 function deep(x){return JSON.parse(JSON.stringify(x));}
 function player(id){return engine.state.roster.snapshot.find(p=>p.playerId===id)||{playerId:id,name:id,number:''};}
@@ -18,6 +20,17 @@ async function loadTacticalLocks(){const key=tacticalKey();if(!key||!adapter){ta
 async function persistTacticalLocks(){const key=tacticalKey();if(!key||!adapter)return; tacticalLocks=T.sanitizeLocks(tacticalLocks,engine.state.game.court);await adapter.put('settings',key,{schemaVersion:1,matchId:engine.state.identity.matchId,locks:deep(tacticalLocks),updatedAt:new Date().toISOString()});}
 async function clearTacticalLocks(){const key=tacticalKey();if(key&&adapter)await adapter.delete('settings',key);tacticalLocks={};}
 async function persist(){if(storage&&engine.state.lifecycle.status==='active') await storage.saveActive(engine);}
+function tacticsKey(){return engine?'statslab:tactics:'+engine.state.identity.matchId:null;}
+async function loadTactics(){const key=tacticsKey();const saved=key&&adapter?await adapter.get('settings',key):null;tacticsMode=(saved&&L.layouts[saved.mode])?saved.mode:'3-3';}
+async function saveTactics(){const key=tacticsKey();if(key&&adapter)await adapter.put('settings',key,{schemaVersion:1,mode:tacticsMode});}
+function chooseTactics(){
+ if(localMode){toast('Surt primer del mode de posicions o canvis.');return;}
+ modal('Disposició tàctica', '<p>Canvia només la representació de les jugadores. No modifica rotacions ni estadístiques.</p>',
+  [{text:'Habitual 3+3'+(tacticsMode==='3-3'?' ✓':''),action:()=>setTactics('3-3')},
+   {text:'Penetració Z1 · 4+2'+(tacticsMode==='penetration-z1'?' ✓':''),cls:'primary',action:()=>setTactics('penetration-z1')},
+   {text:'Cancel·lar',action:closeModal}]);
+}
+async function setTactics(mode){L.assertLayout(mode);tacticsMode=mode;closeModal();render();try{await saveTactics();}catch(err){console.error(err);toast('No s’ha pogut desar la disposició.');}}
 function visualCourt(){return T.deriveVisualCourt(engine.state.game.court,tacticalLocks,{servingSide:engine.state.game.servingSide,phase:engine.state.game.phase});}
 function regZoneOfPlayer(pid){return T.regulatoryZoneOf(engine.state.game.court,pid);}
 async function toggleLockFor(pid,zone){if(tacticalLocks[pid]){delete tacticalLocks[pid];await persistTacticalLocks();render();toast('Fixació eliminada.');return;}const r=T.setLock(tacticalLocks,pid,zone,engine.state.game.court);if(!r.ok){toast('Aquesta zona ja està fixada per una altra jugadora.');return;}tacticalLocks=r.locks;await persistTacticalLocks();render();toast('Jugadora fixada a la zona '+zone+'.');}
@@ -42,10 +55,12 @@ async function run(fn){try{fn();render();await persist();}catch(e){if(await reco
 function renderPlayers(ui){
  const g=$('#playerGrid');g.innerHTML='';
  const shown=(localMode==='POSITIONS'&&positionsDraft)?positionsDraft:visualCourt();
- VISUAL_ZONES.forEach((zone,i)=>{
+ const order=L.assertLayout(tacticsMode).visualOrder;
+ g.classList.toggle('tactics-penetration',tacticsMode==='penetration-z1');
+ order.forEach((zone,i)=>{
    const pid=shown[zone]; const p=player(pid); const regZone=regZoneOfPlayer(pid)||zone;
    const lockZone=tacticalLocks[pid]||null; const isLocked=!!lockZone;
-   const slot=document.createElement('div');slot.className='player-slot'+(localMode==='CANVI'?' change-mode':'')+(zone==='1'?' zone-one':'')+(localMode==='POSITIONS'?' position-mode':'')+(changeOutZone===regZone?' change-selected':'')+(isLocked?' tactical-locked':'');slot.dataset.index=i;slot.dataset.zone=zone;slot.dataset.regZone=regZone;slot.dataset.playerId=pid||'';
+   const slot=document.createElement('div');slot.className='player-slot'+(localMode==='CANVI'?' change-mode':'')+(zone==='1'?' zone-one':'')+(localMode==='POSITIONS'?' position-mode':'')+(changeOutZone===regZone?' change-selected':'')+(isLocked?' tactical-locked':'');slot.dataset.index=VISUAL_ZONES.indexOf(zone);slot.dataset.zone=zone;slot.dataset.regZone=regZone;slot.dataset.playerId=pid||'';slot.classList.add('tzone-'+zone);
    const rg=document.createElement('div');rg.className='rating-grid';
    [0,1,2,3].forEach(v=>{const b=document.createElement('button');b.className='r'+v;b.textContent=v;b.type='button';
      b.disabled=!ui.canRate(regZone,v);
@@ -57,9 +72,9 @@ function renderPlayers(ui){
    if(localMode==='CANVI'){const overlay=document.createElement('button');overlay.type='button';overlay.className='change-hit-area';overlay.setAttribute('aria-label','Canviar '+p.name);overlay.onclick=e=>{e.stopPropagation();chooseCourtForChange(regZone)};slot.appendChild(overlay);}
    if(localMode==='POSITIONS'){
       const lock=document.createElement('button');lock.type='button';lock.className='lock-toggle'+(isLocked?' active':'');lock.textContent=isLocked?'🔒':'🔓';lock.setAttribute('aria-label',isLocked?('Desfixar '+p.name+' (fixada a zona '+lockZone+')'):('Fixar '+p.name+' a zona '+zone));lock.onclick=async e=>{e.stopPropagation();await toggleLockFor(pid,zone);};slot.appendChild(lock);
-      slot.onpointerdown=e=>{if(e.target.closest('.lock-toggle'))return;e.preventDefault();dragIndex=i;slot.setPointerCapture?.(e.pointerId);slot.classList.add('dragging');document.body.classList.add('position-dragging');};
-      slot.onpointermove=e=>{if(dragIndex!==i)return;e.preventDefault();$$('.player-slot').forEach(x=>x.classList.remove('drop-target'));const el=document.elementFromPoint(e.clientX,e.clientY)?.closest('.player-slot');if(el&&Number(el.dataset.index)!==i)el.classList.add('drop-target');};
-      slot.onpointerup=e=>{if(dragIndex!==i)return;e.preventDefault();const el=document.elementFromPoint(e.clientX,e.clientY)?.closest('.player-slot');const target=el?Number(el.dataset.index):i;$$('.player-slot').forEach(x=>x.classList.remove('dragging','drop-target'));document.body.classList.remove('position-dragging');dragIndex=null;if(Number.isInteger(target)&&target!==i){const za=VISUAL_ZONES[i],zb=VISUAL_ZONES[target];[positionsDraft[za],positionsDraft[zb]]=[positionsDraft[zb],positionsDraft[za]];render();}};
+      slot.onpointerdown=e=>{if(e.target.closest('.lock-toggle'))return;e.preventDefault();dragIndex=VISUAL_ZONES.indexOf(zone);slot.setPointerCapture?.(e.pointerId);slot.classList.add('dragging');document.body.classList.add('position-dragging');};
+      slot.onpointermove=e=>{if(dragIndex!==VISUAL_ZONES.indexOf(zone))return;e.preventDefault();$$('.player-slot').forEach(x=>x.classList.remove('drop-target'));const el=document.elementFromPoint(e.clientX,e.clientY)?.closest('.player-slot');if(el&&Number(el.dataset.index)!==VISUAL_ZONES.indexOf(zone))el.classList.add('drop-target');};
+      slot.onpointerup=e=>{if(dragIndex!==VISUAL_ZONES.indexOf(zone))return;e.preventDefault();const el=document.elementFromPoint(e.clientX,e.clientY)?.closest('.player-slot');const target=el?Number(el.dataset.index):VISUAL_ZONES.indexOf(zone);$$('.player-slot').forEach(x=>x.classList.remove('dragging','drop-target'));document.body.classList.remove('position-dragging');dragIndex=null;if(Number.isInteger(target)&&target!==VISUAL_ZONES.indexOf(zone)){const za=zone,zb=VISUAL_ZONES[target];[positionsDraft[za],positionsDraft[zb]]=[positionsDraft[zb],positionsDraft[za]];render();}};
       slot.onpointercancel=()=>{dragIndex=null;$$('.player-slot').forEach(x=>x.classList.remove('dragging','drop-target'));document.body.classList.remove('position-dragging');};
    }
    g.appendChild(slot);
@@ -67,7 +82,8 @@ function renderPlayers(ui){
 }
 function renderBlocks(ui){
  const g=$('#blockGrid');g.innerHTML='';const shown=visualCourt();
- ['4','3','2'].forEach(zone=>{const slot=document.createElement('div');slot.className='block-slot';const regZone=T.blockRegZoneForVisual(engine.state.game.court,shown,zone);const enabled=!!regZone&&ui.blocksEnabled;[['crimson',0,'0 · BLOQUEIG FORA'],['petrol',1,'1 · BLOQUEIG'],['emerald',2,'2 · BLOQUEIG + PUNT']].forEach(([c,v,t])=>{const b=document.createElement('button');b.className=c;b.textContent=t;b.disabled=!enabled;if(!regZone)b.title='La jugadora és reglamentàriament de segona línia';b.onclick=()=>run(()=>engine.block(regZone,v));slot.appendChild(b);});g.appendChild(slot);});
+ g.classList.toggle('tactics-penetration',tacticsMode==='penetration-z1');
+ (tacticsMode==='penetration-z1'?['4','3','1','2']:['4','3','2']).forEach(zone=>{const slot=document.createElement('div');slot.className='block-slot';const regZone=T.blockRegZoneForVisual(engine.state.game.court,shown,zone);const enabled=!!regZone&&ui.blocksEnabled;if(!regZone)slot.classList.add('block-ineligible');[['crimson',0,'0 · BLOQUEIG FORA'],['petrol',1,'1 · BLOQUEIG'],['emerald',2,'2 · BLOQUEIG + PUNT']].forEach(([c,v,t])=>{const b=document.createElement('button');b.className=c;b.textContent=t;b.disabled=!enabled;if(!regZone)b.title='La jugadora situada aquí és de segona línia: no pot bloquejar';b.onclick=()=>run(()=>engine.block(regZone,v));slot.appendChild(b);});g.appendChild(slot);});
 }
 function render(){
  const s=engine.state, venue=s.metadata.venue, ui=P.buildCapa7UiState(engine,{localMode});
@@ -77,6 +93,8 @@ function render(){
  $('#undoBtn').disabled=!ui.undoEnabled;$('#undoLabel').textContent=ui.undoLabel;
  const camp=$('#rivalCourtBtn');camp.disabled=!ui.rivalCourtEnabled;camp.classList.toggle('enabled',ui.rivalCourtEnabled);
  $('#sosBtn').disabled=!ui.sosEnabled;$('#sosBtn').classList.toggle('active-mode',ui.sosActive);
+ $('#tacticsBtn').classList.toggle('active-mode',tacticsMode==='penetration-z1');
+ $('#tacticsBtn').setAttribute('aria-label','Tàctiques: '+L.assertLayout(tacticsMode).label);
  $('#positionsBtn').classList.toggle('active-mode',localMode==='POSITIONS');$('#changeBtn').classList.toggle('active-mode',localMode==='CANVI');
  renderPlayers(ui);renderBlocks(ui);
 }
@@ -142,8 +160,9 @@ async function boot(){
  }
  sessionStorage.removeItem(resumeKey);
  await loadTacticalLocks();
+ await loadTactics();
  $$('[data-score-team]').forEach(b=>b.onclick=()=>run(()=>Number(b.dataset.delta)>0?engine.manualPoint(b.dataset.scoreTeam==='home'?'team':'rival'):engine.manualMinus(b.dataset.scoreTeam==='home'?'team':'rival')));
- $('#actionBox').onclick=()=>run(()=>engine.advancePhase());$('#undoBtn').onclick=()=>run(()=>engine.undo());$('#rivalCourtBtn').onclick=()=>run(()=>engine.rivalCourt());$('#sosBtn').onclick=toggleSOS;$('#positionsBtn').onclick=togglePositions;$('#changeBtn').onclick=startChange;$('#homeBtn').onclick=home;$('#finishSetBtn').onclick=finishSet;$('#finishMatchBtn').onclick=finishMatch;$('#modalLayer').onclick=e=>{if(e.target===$('#modalLayer'))closeModal();};
+ $('#actionBox').onclick=()=>run(()=>engine.advancePhase());$('#undoBtn').onclick=()=>run(()=>engine.undo());$('#rivalCourtBtn').onclick=()=>run(()=>engine.rivalCourt());$('#sosBtn').onclick=toggleSOS;$('#positionsBtn').onclick=togglePositions;$('#tacticsBtn').onclick=chooseTactics;$('#changeBtn').onclick=startChange;$('#homeBtn').onclick=home;$('#finishSetBtn').onclick=finishSet;$('#finishMatchBtn').onclick=finishMatch;$('#modalLayer').onclick=e=>{if(e.target===$('#modalLayer'))closeModal();};
  render();
 }
 boot().catch(e=>{console.error(e);alert('Error iniciant el partit: '+e.message);});
