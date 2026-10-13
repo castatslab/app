@@ -53,3 +53,14 @@
 }
 
 /* No es retallen superfícies per animació: els 24 controls continuen sent directes. */
+
+/* ALFA 9: identitat reglamentaria de Z1 ressaltada mentre 4+2 sigui actiu.
+   El contorn va per dins i no intercepta els botons 0-3. */
+.player-grid.tactics-penetration .player-slot.tactics-z1-highlight{
+  border-color:#49e8d5;
+  box-shadow:inset 0 0 0 2px #27d7c3,0 0 0 2px rgba(13,83,79,.9),0 0 13px rgba(55,231,212,.55);
+}
+.player-grid.tactics-penetration .player-slot.tactics-z1-highlight .player-id{
+  border-color:#49e8d5;
+  box-shadow:0 0 0 1px rgba(73,232,213,.6),0 4px 12px rgba(0,0,0,.48);
+}

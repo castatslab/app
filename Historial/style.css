@@ -36,3 +36,11 @@ button,select{font:inherit}
     .stage{height:calc(100dvh - 56px - var(--sc-iphone-safe-top))!important}
   }
 }
+
+/* LAB ALFA 9 fix 2: en paisatge baix, la llista sencera es pot consultar
+   arrossegant verticalment la pantalla, sense ocultar targetes. */
+@media (orientation:landscape) and (max-height:600px){
+ .stage{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;}
+ .history-shell{flex:0 0 auto;min-height:0;}
+ .history-scroll{flex:0 0 auto;min-height:0;overflow:visible;overscroll-behavior:auto;padding-bottom:8px;}
+}
