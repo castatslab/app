@@ -60,7 +60,7 @@ function renderPlayers(ui){
  order.forEach((zone,i)=>{
    const pid=shown[zone]; const p=player(pid); const regZone=regZoneOfPlayer(pid)||zone;
    const lockZone=tacticalLocks[pid]||null; const isLocked=!!lockZone;
-   const slot=document.createElement('div');slot.className='player-slot'+(localMode==='CANVI'?' change-mode':'')+(zone==='1'?' zone-one':'')+(localMode==='POSITIONS'?' position-mode':'')+(changeOutZone===regZone?' change-selected':'')+(isLocked?' tactical-locked':'');slot.dataset.index=VISUAL_ZONES.indexOf(zone);slot.dataset.zone=zone;slot.dataset.regZone=regZone;slot.dataset.playerId=pid||'';slot.classList.add('tzone-'+zone);
+   const slot=document.createElement('div');slot.className='player-slot'+(localMode==='CANVI'?' change-mode':'')+(zone==='1'?' zone-one':'')+(localMode==='POSITIONS'?' position-mode':'')+(changeOutZone===regZone?' change-selected':'')+(isLocked?' tactical-locked':'');slot.dataset.index=VISUAL_ZONES.indexOf(zone);slot.dataset.zone=zone;slot.dataset.regZone=regZone;slot.dataset.playerId=pid||'';slot.classList.add('tzone-'+zone);if(tacticsMode==='penetration-z1'&&regZone==='1')slot.classList.add('tactics-z1-highlight');
    const rg=document.createElement('div');rg.className='rating-grid';
    [0,1,2,3].forEach(v=>{const b=document.createElement('button');b.className='r'+v;b.textContent=v;b.type='button';
      b.disabled=!ui.canRate(regZone,v);
