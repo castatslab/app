@@ -64,3 +64,9 @@
   border-color:#49e8d5;
   box-shadow:0 0 0 1px rgba(73,232,213,.6),0 4px 12px rgba(0,0,0,.48);
 }
+
+/* Laterals del 4+2: valoració descendent de dalt a baix. */
+.player-grid.tactics-penetration :is(.tzone-4,.tzone-2) .r3{grid-row:1;}
+.player-grid.tactics-penetration :is(.tzone-4,.tzone-2) .r2{grid-row:2;}
+.player-grid.tactics-penetration :is(.tzone-4,.tzone-2) .r1{grid-row:3;}
+.player-grid.tactics-penetration :is(.tzone-4,.tzone-2) .r0{grid-row:4;}
