@@ -25,13 +25,14 @@ async function loadTactics(){const key=tacticsKey();const saved=key&&adapter?awa
 async function saveTactics(){const key=tacticsKey();if(key&&adapter)await adapter.put('settings',key,{schemaVersion:1,mode:tacticsMode});}
 function chooseTactics(){
  if(localMode){toast('Surt primer del mode de posicions o canvis.');return;}
- modal('Disposició tàctica', '<p>Canvia només la representació de les jugadores. No modifica rotacions ni estadístiques.</p>',
+ modal('Disposició tàctica', '<p>Amb Penetració Z1 · 4+2, Z1 avança en recepció, col·locació i atac, i torna al darrere en defensa, bloqueig i servei. Habitual 3+3 manté la distribució fixa. No modifica rotacions ni estadístiques.</p>',
   [{text:'Habitual 3+3'+(tacticsMode==='3-3'?' ✓':''),action:()=>setTactics('3-3')},
    {text:'Penetració Z1 · 4+2'+(tacticsMode==='penetration-z1'?' ✓':''),cls:'primary',action:()=>setTactics('penetration-z1')},
    {text:'Cancel·lar',action:closeModal}]);
 }
 async function setTactics(mode){L.assertLayout(mode);tacticsMode=mode;closeModal();render();try{await saveTactics();}catch(err){console.error(err);toast('No s’ha pogut desar la disposició.');}}
-function visualCourt(){return T.deriveVisualCourt(engine.state.game.court,tacticalLocks,{servingSide:engine.state.game.servingSide,phase:engine.state.game.phase});}
+function currentLayout(){return L.effectiveLayout(tacticsMode,engine.state.game.phase);}
+function visualCourt(){const court=engine.state.game.court,visual=T.deriveVisualCourt(court,tacticalLocks,{servingSide:engine.state.game.servingSide,phase:engine.state.game.phase});return tacticsMode==='penetration-z1'?L.placeZ1(court,visual):visual;}
 function regZoneOfPlayer(pid){return T.regulatoryZoneOf(engine.state.game.court,pid);}
 async function toggleLockFor(pid,zone){if(tacticalLocks[pid]){delete tacticalLocks[pid];await persistTacticalLocks();render();toast('Fixació eliminada.');return;}const r=T.setLock(tacticalLocks,pid,zone,engine.state.game.court);if(!r.ok){toast('Aquesta zona ja està fixada per una altra jugadora.');return;}tacticalLocks=r.locks;await persistTacticalLocks();render();toast('Jugadora fixada a la zona '+zone+'.');}
 async function reconcileStale(error,{forFinalize=false}={}){
@@ -55,8 +56,9 @@ async function run(fn){try{fn();render();await persist();}catch(e){if(await reco
 function renderPlayers(ui){
  const g=$('#playerGrid');g.innerHTML='';
  const shown=(localMode==='POSITIONS'&&positionsDraft)?positionsDraft:visualCourt();
- const order=L.assertLayout(tacticsMode).visualOrder;
- g.classList.toggle('tactics-penetration',tacticsMode==='penetration-z1');
+ const layout=currentLayout(),order=L.assertLayout(layout).visualOrder;
+ g.dataset.layout=layout;
+ g.classList.toggle('tactics-penetration',layout==='penetration-z1');
  order.forEach((zone,i)=>{
    const pid=shown[zone]; const p=player(pid); const regZone=regZoneOfPlayer(pid)||zone;
    const lockZone=tacticalLocks[pid]||null; const isLocked=!!lockZone;
@@ -83,7 +85,7 @@ function renderPlayers(ui){
 function renderBlocks(ui){
  const g=$('#blockGrid');g.innerHTML='';
  const shown=visualCourt();
- const penetration=tacticsMode==='penetration-z1';
+ const penetration=currentLayout()==='penetration-z1';
  g.classList.toggle('tactics-penetration',penetration);
  // In 4+2 locks can move a front-row player to any visual zone.
  // Blocking belongs to the regulatory front row, never to a visual position.
