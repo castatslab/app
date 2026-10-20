@@ -21,6 +21,11 @@ const root=path.resolve(__dirname,'..'),draft=require('./draft.json');
  await page.reload();await layout('3-3');await rate('6');await layout('penetration-z1');
  const preDisable=await snapshot();await choose(/Habitual 3\+3/);await layout('3-3');assert.equal(await snapshot(),preDisable);
  await rate('1');await layout('3-3');await rate('4');await layout('3-3');await rate('6');await layout('3-3');await page.reload();await layout('3-3');
+ await page.locator('[data-score-team="home"][data-delta="1"]').click();await page.waitForTimeout(100);
+ await choose(/Penetració Z1/);await layout('3-3');await rate('1');await layout('penetration-z1');
+ assert.equal(await page.locator('#actionBox').innerText().then(s=>s.includes('DEFENSA')),true);
+ await page.reload();await layout('penetration-z1');await page.locator('#undoBtn').click();await layout('3-3');
+ await rate('1');await layout('penetration-z1');await rate('6');await layout('penetration-z1');
  assert.deepEqual(errors,[]);console.log(`PASS ${viewport.width}x${viewport.height}: fases, geometria, desfer, persistència, desactivació i dades intactes`);await context.close();
  }}finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

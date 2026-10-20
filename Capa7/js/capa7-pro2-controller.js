@@ -25,13 +25,13 @@ async function loadTactics(){const key=tacticsKey();const saved=key&&adapter?awa
 async function saveTactics(){const key=tacticsKey();if(key&&adapter)await adapter.put('settings',key,{schemaVersion:1,mode:tacticsMode});}
 function chooseTactics(){
  if(localMode){toast('Surt primer del mode de posicions o canvis.');return;}
- modal('Disposició tàctica', '<p>Amb Penetració Z1 · 4+2, Z1 avança en recepció, col·locació i atac, i torna al darrere en defensa, bloqueig i servei. Habitual 3+3 manté la distribució fixa. No modifica rotacions ni estadístiques.</p>',
+ modal('Disposició tàctica', '<p>Amb Penetració Z1 · 4+2, Z1 avança just després del servei jugable, i també en recepció, col·locació i atac. Torna al darrere en defensa després de l’atac, en bloqueig i abans de servir. Habitual 3+3 manté la distribució fixa. No modifica rotacions ni estadístiques.</p>',
   [{text:'Habitual 3+3'+(tacticsMode==='3-3'?' ✓':''),action:()=>setTactics('3-3')},
    {text:'Penetració Z1 · 4+2'+(tacticsMode==='penetration-z1'?' ✓':''),cls:'primary',action:()=>setTactics('penetration-z1')},
    {text:'Cancel·lar',action:closeModal}]);
 }
 async function setTactics(mode){L.assertLayout(mode);tacticsMode=mode;closeModal();render();try{await saveTactics();}catch(err){console.error(err);toast('No s’ha pogut desar la disposició.');}}
-function currentLayout(){return L.effectiveLayout(tacticsMode,engine.state.game.phase);}
+function currentLayout(){return L.effectiveLayout(tacticsMode,engine.state.game.phase,engine.log.actions);}
 function visualCourt(){const court=engine.state.game.court,visual=T.deriveVisualCourt(court,tacticalLocks,{servingSide:engine.state.game.servingSide,phase:engine.state.game.phase});return tacticsMode==='penetration-z1'?L.placeZ1(court,visual):visual;}
 function regZoneOfPlayer(pid){return T.regulatoryZoneOf(engine.state.game.court,pid);}
 async function toggleLockFor(pid,zone){if(tacticalLocks[pid]){delete tacticalLocks[pid];await persistTacticalLocks();render();toast('Fixació eliminada.');return;}const r=T.setLock(tacticalLocks,pid,zone,engine.state.game.court);if(!r.ok){toast('Aquesta zona ja està fixada per una altra jugadora.');return;}tacticalLocks=r.locks;await persistTacticalLocks();render();toast('Jugadora fixada a la zona '+zone+'.');}
