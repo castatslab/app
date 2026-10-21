@@ -25,7 +25,7 @@ async function loadTactics(){const key=tacticsKey();const saved=key&&adapter?awa
 async function saveTactics(){const key=tacticsKey();if(key&&adapter)await adapter.put('settings',key,{schemaVersion:1,mode:tacticsMode});}
 function chooseTactics(){
  if(localMode){toast('Surt primer del mode de posicions o canvis.');return;}
- modal('Disposició tàctica', '<p>Amb Penetració Z1 · 4+2, Z1 avança just després del servei jugable, i també en recepció, col·locació i atac. Torna al darrere en defensa després de l’atac, en bloqueig i abans de servir. Habitual 3+3 manté la distribució fixa. No modifica rotacions ni estadístiques.</p>',
+ modal('Disposició tàctica', '<p>Amb Penetració Z1 · 4+2, la jugadora que ocupa la Z1 reglamentària fa de col·locadora. Avança en recepció (servei rival ja executat) i en col·locació. Després de col·locar torna a Z1, també durant l’atac. Amb servei propi es manté a Z1 fins a la fase de col·locació. Habitual 3+3 manté la distribució fixa. No modifica rotacions ni estadístiques.</p>',
   [{text:'Habitual 3+3'+(tacticsMode==='3-3'?' ✓':''),action:()=>setTactics('3-3')},
    {text:'Penetració Z1 · 4+2'+(tacticsMode==='penetration-z1'?' ✓':''),cls:'primary',action:()=>setTactics('penetration-z1')},
    {text:'Cancel·lar',action:closeModal}]);
