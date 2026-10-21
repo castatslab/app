@@ -10,13 +10,11 @@ const layouts=Object.freeze({
 });
 function assertLayout(key){if(!Object.prototype.hasOwnProperty.call(layouts,key))throw new Error('Disposició no permesa: '+key);return layouts[key];}
 // The selected tactic persists; its geometry follows the current rally phase.
-function effectiveLayout(key,phase,actions=[]){
+function effectiveLayout(key,phase){
  assertLayout(key);
- // Ignore substitutions and position changes: they do not end the post-serve transition.
- const rallyTypes=['SERVEI','RECEPCIO','COLLOCACIO','ATAC','DEFENSA','BLOQUEIG','CAMP_RIVAL','POINT','MATCH_START','SET_START'];
- const last=actions.findLast(a=>a.active!==false&&rallyTypes.includes(a.type));
- const afterServe=phase==='DEFENSA'&&last?.type==='SERVEI'&&[1,2].includes(last.data?.value);
- return key==='penetration-z1'&&(['RECEPCIO','COLLOCACIO','ATAC'].includes(phase)||afterServe)?'penetration-z1':'3-3';
+ // RECEPCIO represents an opponent serve already executed (no separate serve event).
+ // Once the set is rated the engine advances to ATAC: Z1 returns to defend.
+ return key==='penetration-z1'&&['RECEPCIO','COLLOCACIO'].includes(phase)?'penetration-z1':'3-3';
 }
 function placeZ1(court,visual){
  const out={...visual},id=court?.['1'];
